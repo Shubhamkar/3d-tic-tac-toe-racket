@@ -1,22 +1,40 @@
-#lang racket
+;#lang racket
 
+;(require "board.rkt")
+;(provide (all-defined-out))
 ;;; a demo of a function that check of a winning position is formed
 
 ;;; Since, in the current turn, a line can only be formed, if it includes
 ;;; the last played position, we take this position, and check from the
-;;; corresponding beginning of every such line. 
+;;; corresponding beginning of every such line.
+
+(define (make-3d-vector x y z init)
+  (build-vector z
+                (lambda (k)
+                  (build-vector y
+                                (lambda (j)
+                                  (make-vector x init))))))
+
+;; note that inner-most-list comprises the x-coordinates
 
 (define board
-  '(((1 1 1 1) (0 0 0 0) (0 0 0 0) (0 0 0 0))
-  ((0 0 0 0) (0 0 0 0) (0 0 0 0) (0 0 0 0))
-  ((0 0 0 0) (0 0 0 0) (0 0 0 0) (0 0 0 0))
-  ((0 0 0 0) (0 0 0 0) (0 0 0 0) (0 0 0 0))))
+  (make-3d-vector 4 4 4 0))
+;  '(((1 1 1 1) (0 0 0 0) (0 0 0 0) (0 0 0 0))
+;  ((0 0 0 0) (0 0 0 0) (0 0 0 0) (0 0 0 0))
+;  ((0 0 0 0) (0 0 0 0) (0 0 0 0) (0 0 0 0))
+;  ((0 0 0 0) (0 0 0 0) (0 0 0 0) (0 0 0 0))))
 ; unset state is 0; other states are -1 and 1.
+
 (define last-played-pos '(0 0 0))
 
 (define (get-value pos)
   ;; pos - a list of x y z coordinates, in that order
-  (list-ref (list-ref (list-ref board (caddr pos)) (cadr pos)) (car pos)))
+  (vector-ref (vector-ref (vector-ref board (caddr pos)) (cadr pos)) (car pos)))
+;  (list-ref (list-ref (list-ref board (caddr pos)) (cadr pos)) (car pos)))
+
+(define (set!-value pos val)
+  (vector-set! (vector-ref (vector-ref board (caddr pos)) (cadr pos)) (car pos) val))
+
 
 (define (win? player)
   ; returns #t if a player has won.
@@ -27,17 +45,21 @@
   (define lpp last-played-pos) ; abbreviation
   
   (define (get-line init-update)
-    (define init (car init-update))
-    (define update (cadr init-update))
-    (while/list border-not-reached? update init))
+    (define gl-init (car init-update))
+    (define gl-update (cadr init-update))
+    ;(displayln gl-init)
+    ;(displayln gl-update)
+    (while/list border-not-reached? gl-update gl-init))
 
   (define (in-a-line? l)
     ; takes in a list of coordinates and checks if they form a complete line
     ; currently does not check if the position is unset.
+    ;(displayln "In in-a-line?")
     (and (apply = (map get-value l)) (not (= 0 (get-value (car l))))))
   
   (define (border-not-reached? pos)
     ; Returns #t if pos is an invalid (in a greater sense) coordinate
+    ;(display "In border-not-reached: ") (displayln pos)
     (and (>= n (car pos)) (>= n (cadr pos)) (>= n (caddr pos))))
 
   ;;; CAN BE A BOTTLENECK WITHOUT VECTORS
@@ -69,16 +91,16 @@
                (if (= x z) (list (list (list 0 y 0) (update 1 0 1))) '())
                (if (= n (+ x y)) (list (list (list 0 n z) (update 1 -1 0))) '())
                (if (= n (+ z y)) (list (list (list x 0 n) (update 0 1 -1))) '())
-               (if (= n (+ x z)) (list (list (list n y 0) (update -1 0 1))) '())))
+               (if (= n (+ x z)) (list (list (list (list n y 0) (update -1 0 1)))) '())))
     
     (define (gen-body-diag)
-      (append* (if (= x y z) (list (list (list 0 0 0) (update 0 0 0))) '())
+      (append* (if (= x y z) (list (list (list 0 0 0) (update 1 1 1))) '())
                (if (and (= x y) (= n (+ x z)))
                    (list (list (list 0 0 3) (update 1 1 -1))) '())
                (if (and (= x z) (= n (+ x y)))
                    (list (list (list 0 3 0) (update 1 -1 1))) '())
                (if (and (= z y) (= n (+ x z)))
-                   (list (list (list 3 0 0) (update -1 1 1))) '())))
+                   (list (list (list (list 3 0 0) (update -1 1 1)))) '())))
     
     (append (gen-axes) (gen-plane-diag) (gen-body-diag)))
 
@@ -86,7 +108,7 @@
   (define (helper)
     ; the main function of win?
     (define init-update-list (update-methods))
-    ;(displayln init-update-list)
+    (displayln init-update-list)
     (define (check-all-lines l) ; l would be a list of init-updates
       (cond (line-found #t)
             ((null? l) #f)
@@ -95,16 +117,56 @@
                (set! line-found (in-a-line? (get-line (car l))))
                (check-all-lines (cdr l))))))
     (check-all-lines init-update-list)
-    (if line-found
-        (if (= player 1) (displayln "Player 1 won") (displayln "Player 2 won"))
-        line-found)
+;    (if line-found
+;        (if (= player 1) (displayln "Player 1 won") (displayln "Player 2 won"))
+;        line-found)
     line-found)
     
 
   (helper))
       
                 
+;; ================== SOME HIGHER ORDER FUNCTIONS =========================
+
+;; is until supposed to return something even when (p x) is true while entering?
+;; if yes, then it isn't the same as simply until (cond) {expr}; but a do-until. 
+
+(define (until p f x)
+  ;;; applies f to p until (p x) returns true
+  (if (p x) x (until p f (f x))))
+
+
+(define (until/list p f x)
+  ;;; applies f to p until (p x) becomes true, and returns a list
+  ;;; containing all the previous results
+  (if (p x) (list x) (cons x (until/list p f (f x)))))
+
+;; returns a list containing f applied increasing number of times
+;; the values are accumulated
+(define (while/list p f x)
+  ;(displayln x)
+  ;(displayln f)
+  (if (p x) (cons x (while/list p f (f x))) '()))
+
+;; returns x even if the condition is false, unlike while.
+(define (do-while p f x)
+  (if (p x) (do-while p f (f x)) x))
+
+
+;; rotate-r works only on pos - comprising of 3 elements
+(define (rotate-l pos) (append (cdr pos) (list (car pos))))
+(define (rotate-r pos) (cons (caddr pos) (list (car pos) (cadr pos))))
+
+(define (exchange pos x y z)
+  ;; exchangers coordinates at the corresponding location
+  (cond ((= 1 x y) (cons (cadr pos) (cons (car pos) (cddr pos))))
+        ((= 1 y z) (cons (car pos) (list (caddr pos) (cadr pos))))
+        ((= 1 x z) (cons (caddr pos) (cons (cadr pos) (list (car pos)))))
+        (else (error "Unknown exchange format"))))
+
+
 ;--------------------- These functions could not be used in the above code. -----------------------
+
     ;; Appreciable functions, they are. init and lpp relation makes them useless.
 ;      (define (all-comb update-method init)
 ;        ;; takes an init and update mthod that operates on its arguments in one way.
@@ -161,41 +223,4 @@
 ;                   (updated-pos (exchange updated-new-pos x y z)))
 ;              updated-pos))))  
     
-  
-
-;; ================== SOME HIGHER ORDER FUNCTIONS =========================
-
-;; is until supposed to return something even when (p x) is true while entering?
-;; if yes, then it isn't the same as simply until (cond) {expr}; but a do-until. 
-
-(define (until p f x)
-  ;;; applies f to p until (p x) returns true
-  (if (p x) x (until p f (f x))))
-
-
-(define (until/list p f x)
-  ;;; applies f to p until (p x) becomes true, and returns a list
-  ;;; containing all the previous results
-  (if (p x) (list x) (cons x (until/list p f (f x)))))
-
-;; returns a list containing f applied increasing number of times
-;; the values are accumulated
-(define (while/list p f x)
-  (if (p x) (cons x (while/list p f (f x))) '()))
-
-;; returns x even if the condition is false, unlike while.
-(define (do-while p f x)
-  (if (p x) (do-while p f (f x)) x))
-
-
-;; rotate-r works only on pos - comprising of 3 elements
-(define (rotate-l pos) (append (cdr pos) (list (car pos))))
-(define (rotate-r pos) (cons (caddr pos) (list (car pos) (cadr pos))))
-
-(define (exchange pos x y z)
-  ;; exchangers coordinates at the corresponding location
-  (cond ((= 1 x y) (cons (cadr pos) (cons (car pos) (cddr pos))))
-        ((= 1 y z) (cons (car pos) (list (caddr pos) (cadr pos))))
-        ((= 1 x z) (cons (caddr pos) (cons (cadr pos) (list (car pos)))))
-        (else (error "Unknown exchange format"))))
   

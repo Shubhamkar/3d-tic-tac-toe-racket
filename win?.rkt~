@@ -1,7 +1,0 @@
-#lang racket
-
-(define board)
-
-(define (get-value pos)
-  ;; pos - a list of x y z coordinates
-  (list-ref z (list-ref y (list-ref x board))))
