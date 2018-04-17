@@ -15,9 +15,9 @@
 (define (sign)
   (if myturn 1 -1))
 
-;(set! board (set!-value board '(0 0 0) 1))
-;(set! board (set!-value board '(1 1 1) 1))
-;(set! board (set!-value board '(2 2 2) 1))
+(set! board (set!-value board '(0 0 0) -1))
+(set! board (set!-value board '(1 1 1) -1))
+(set! board (set!-value board '(2 2 2) -1))
 
 ;; play-n-turns is the main function
 ;; it uses the all-plays function to generate the play a move
@@ -178,11 +178,11 @@
                   (define mod-tree (remove-nodes-with-losing-leaves tree))
                   (if (null? (gnode-subtrees mod-tree))
                       ;; if all the moves result in my loss, play a move at random
-                      (cdr (get-val (list-ref (gnode-subtrees tree)
-                                                (random (length (gnode-subtrees tree))))))
                       (begin
                         (set! myturn (not myturn))
-                        (minimax (+ depth 1) (increase-depth tree))))))))) ; tree could be a modified-tree
+                        (minimax (+ depth 1) (increase-depth tree)))
+                      (cdr (get-val (list-ref (gnode-subtrees mod-tree)
+                                                (random (length (gnode-subtrees mod-tree)))))))))))) ; tree could be a modified-tree
 
   (define move (minimax 1 (increase-depth (leaf (cons board 0)))))
   (set! myturn orig-turn)

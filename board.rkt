@@ -9,7 +9,8 @@
 ;(define pcturn #f)
 ; player can be either 0 or 1 - two players
 
-(define difficulty 2)
+;; doesn't work on difficulty 3
+(define difficulty 3)
 
 (define main-window (new frame%
                          [label "Tic Tac Toe 3d"]
