@@ -5,8 +5,11 @@
 ;(dynamic-require "win.rkt")
 ;(provide (all-defined-out))
 (include "win.rkt")
-(define player 0)
+(include "minimax.rkt")
+;(define pcturn #f)
 ; player can be either 0 or 1 - two players
+
+(define difficulty 2)
 
 (define main-window (new frame%
                          [label "Tic Tac Toe 3d"]
@@ -97,28 +100,39 @@
     
     (set! last-played-pos (list cell-x cell-y cell-z))  
     (displayln last-played-pos)
+    
 
-    (if (= 0 (get-value last-played-pos))
+    (if (= 0 (get-value board last-played-pos))
         (begin
           (set! corner-x (+ 10 (* cell-x 50)))
           (set! corner-y (+ 10 (* cell-y 30)  (* cell-z 160)))
           (send dc set-pen black-pen)
-          (cond ((= 0 player)
+          (cond (myturn
                  (circle)
-                 (set!-value last-played-pos 1))
-                (else (cross) (set!-value last-played-pos -1)))
-          (if (win? player)
+                 (set! board (set!-value board last-played-pos 1)))
+                (else (cross) (set! board (set!-value board last-played-pos -1))))
+          (if (win? board last-played-pos)
               (begin
-                (send win-msg set-label (string-append "Player " (number->string (+ 1 player)) " has won!"))
+                (send win-msg set-label (string-append "Player " (number->string (if myturn 2 1)) " has won!"))
                 ;(sleep/yield 0.05)
                 (send win-notif show #t))
               (void)))
         (void))
-    
-    
-    (set! player (- 1 player)))
+    (display-board board)
+    (set! myturn (not myturn)))
   
-  (if valid-position (make-turn) (void)))
+  (if valid-position
+      (let ()
+        (make-turn)
+        
+        (define pc-pos (play-n-turns difficulty))
+        (display "PC Pos:") (displayln pc-pos)
+        (set! x (+ (* (car pc-pos) 50) 10))
+        (set! z (caddr pc-pos))
+        (set! adjusted-y (+ (* (cadr pc-pos) 30) 10 (* 120 z)))
+              ;(floor (/ (- adjusted-y 10 (* z 120)) 30))))
+        (make-turn))
+      (void)))
 
 
 ;----------------------------------- End of GUI Board ------------------------------------
@@ -154,7 +168,7 @@
        ; Callback procedure for a button click:
        [callback (lambda (button event)
                    (draw-board dc)
-                   (set! board (make-3d-vector 4 4 4 0))
+                   (set! board 0)
                    (send msg-area set-label "The game has been restarted.")
                    (send restart-confirm-window show #f))]))
 ;(send restart-confirm-window show #t))]))
