@@ -4,8 +4,10 @@
 ;(include "win.rkt") ; comment out this line later
 ;(include "symmetry.rkt")
 
-(struct gnode (val subtrees) #:transparent)
-(struct leaf (val) #:transparent)
+(define move-tree #f)
+
+(struct gnode (val subtrees)); #:transparent)
+(struct leaf (val)); #:transparent)
 (define (get-val node)
   (match node
     ((leaf val) val)
@@ -15,9 +17,11 @@
 (define (sign)
   (if myturn 1 -1))
 
-(set! board (set!-value board '(0 0 0) -1))
-(set! board (set!-value board '(1 1 1) -1))
-(set! board (set!-value board '(2 2 2) -1))
+;(set! board (set!-value board '(2 0 0) -1))
+;(set! board (set!-value board '(2 1 0) -1))
+;;(set! board (set!-value board '(2 2 0) -1))
+;(set! board (set!-value board '(0 2 0) -1))
+;(set! board (set!-value board '(1 2 0) -1))
 
 ;; play-n-turns is the main function
 ;; it uses the all-plays function to generate the play a move
@@ -37,7 +41,7 @@
            (define y (quotient (remainder i 16) 4))
            (define x (remainder (remainder i 16) 4))
            (if (= 0 (get-value leaf-b-lpp (list x y z)))
-               (cons (cons (set!-value board (list x y z) (sign)) i)
+               (cons (cons (set!-value (car (leaf-val leaf-b-lpp)) (list x y z) (sign)) i)
                      (ap-h (+ i 1)))
                (ap-h (+ i 1))))))
   (ap-h 0))
@@ -54,7 +58,7 @@
            (define y (quotient (remainder i 16) 4))
            (define x (remainder (remainder i 16) 4))
            (if (= 0 (get-value (car (leaf-val leaf-b-lpp)) (list x y z)))
-               (cons (leaf (cons (set!-value board (list x y z) (sign)) i))
+               (cons (leaf (cons (set!-value (car (leaf-val leaf-b-lpp)) (list x y z) (sign)) i))
                      (ap-h (+ i 1)))
                (ap-h (+ i 1))))))
   (define st (ap-h 0)) ; list of subtrees
@@ -160,16 +164,39 @@
                                 (keep-nodes-with-winning-leaves tree)
                                 (remove-nodes-with-losing-leaves tree))) ; should this be remove?
            (if (null? (gnode-subtrees mod-tree))
-                      (cdr (gnode-val (list-ref (gnode-subtrees tree)
-                                                (random (length (gnode-subtrees tree))))))
-                      (cdr (gnode-val (list-ref (gnode-subtrees mod-tree)
-                                                (random (length (gnode-subtrees mod-tree))))))))
+                      (begin
+                        (displayln "Tree"); (display tree)
+                        (set! move-tree tree)
+                        (cdr (gnode-val (list-ref (gnode-subtrees tree)
+                                                (random (length (gnode-subtrees tree)))))))
+                      (begin
+                        (displayln "Mod-tree"); (display mod-tree)
+                        (set! move-tree mod-tree)
+                        (cdr (gnode-val (list-ref (gnode-subtrees mod-tree)
+                                                (random (length (gnode-subtrees mod-tree)))))))))
+;           (cond (myturn
+;                  (define mod-tree (keep-nodes-with-winning-leaves tree))
+;                  (if (null? (gnode-subtrees mod-tree))
+;                      (cdr (get-val (list-ref (gnode-subtrees tree) ; can also be leaf-val
+;                                                (random (length (gnode-subtrees tree))))))
+;                      ; if I can win immediately, win
+;                      (cdr (get-val (list-ref (gnode-subtrees mod-tree) ; can also be leaf-val
+;                                                (random (length (gnode-subtrees mod-tree)))))))) 
+;                 ((not myturn)
+;                  (define mod-tree (remove-nodes-with-losing-leaves tree))
+;                  (if (null? (gnode-subtrees mod-tree))
+;                      ; if all the moves result in my loss, play a move at random
+;                      (cdr (get-val (list-ref (gnode-subtrees tree)
+;                                              (random (length (gnode-subtrees tree)))))) ; tree could be a modified-tree
+;                      (cdr (get-val (list-ref (gnode-subtrees tree)
+;                                              (random (length (gnode-subtrees mod-tree))))))))))
           (else
            (cond (myturn
                   (define mod-tree (keep-nodes-with-winning-leaves tree))
                   (if (null? (gnode-subtrees mod-tree))
                       (begin
                         (set! myturn (not myturn))
+                        (display "I cannot win immediately at depth: ") (displayln depth)
                         (minimax (+ depth 1) (increase-depth tree)))
                       ;; if I can win immediately, win
                       (cdr (get-val (list-ref (gnode-subtrees mod-tree) ; can also be leaf-val
@@ -178,11 +205,12 @@
                   (define mod-tree (remove-nodes-with-losing-leaves tree))
                   (if (null? (gnode-subtrees mod-tree))
                       ;; if all the moves result in my loss, play a move at random
+                      (cdr (get-val (list-ref (gnode-subtrees tree)
+                                              (random (length (gnode-subtrees tree)))))) ; tree could be a modified-tree
                       (begin
                         (set! myturn (not myturn))
-                        (minimax (+ depth 1) (increase-depth tree)))
-                      (cdr (get-val (list-ref (gnode-subtrees mod-tree)
-                                                (random (length (gnode-subtrees mod-tree)))))))))))) ; tree could be a modified-tree
+                        (display "There are ways in which the opponent cannot win at depth: ") (displayln depth)
+                        (minimax (+ depth 1) (increase-depth mod-tree)))))))))
 
   (define move (minimax 1 (increase-depth (leaf (cons board 0)))))
   (set! myturn orig-turn)
@@ -190,6 +218,8 @@
   (define y (quotient (remainder move 16) 4))
   (define x (remainder (remainder move 16) 4))
   (list x y z))
+
+
   
 ;  (define (actual-move tree) ; if win is immediate, win!
 ;    (define temp-tree (keep-nodes-with-winning-leaves tree))
