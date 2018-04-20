@@ -10,7 +10,7 @@
 ; player can be either 0 or 1 - two players
 
 ;; doesn't work on difficulty 3
-(define difficulty 3)
+(define difficulty 4)
 
 (define main-window (new frame%
                          [label "Tic Tac Toe 3d"]
@@ -126,7 +126,7 @@
       (let ()
         (make-turn)
         
-        (define pc-pos (play-n-turns difficulty))
+        (define pc-pos (play-n-turns-3 difficulty))
         (display "PC Pos:") (displayln pc-pos)
         (set! x (+ (* (car pc-pos) 50) 10))
         (set! z (caddr pc-pos))

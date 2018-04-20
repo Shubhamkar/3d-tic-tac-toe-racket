@@ -15,10 +15,27 @@
                                 (lambda (j)
                                   (make-vector x init))))))
 
+(define (3d-vector-set! vec x y z val)
+  (vector-set! (vector-ref (vector-ref vec z) y) x val))
+
+(define (3d-vector-ref vec x y z)
+  ;; pos - a list of x y z coordinates, in that order
+  (vector-ref (vector-ref (vector-ref vec z) y) x))
+
+(define (3d-vector-copy vec)
+  (define z-max (vector-length vec))
+  (define y-max (vector-length (vector-ref vec 0)))
+  (build-vector z-max
+                (lambda (z)
+                  (build-vector y-max
+                                (lambda (y)
+                                  (vector-copy
+                                   (vector-ref (vector-ref vec z) y)))))))
+
 ;; note that inner-most-list comprises the x-coordinates
 
-(define board
-  (make-3d-vector 4 4 4 0))
+(define board 0) ; board is an integer; 2 bits each represent the state of each cell
+  ;(make-3d-vector 4 4 4 0))
 ;  '(((1 1 1 1) (0 0 0 0) (0 0 0 0) (0 0 0 0))
 ;  ((0 0 0 0) (0 0 0 0) (0 0 0 0) (0 0 0 0))
 ;  ((0 0 0 0) (0 0 0 0) (0 0 0 0) (0 0 0 0))
@@ -26,23 +43,90 @@
 ; unset state is 0; other states are -1 and 1.
 
 (define last-played-pos '(0 0 0))
+(define pcturn #t)
 
-(define (get-value pos)
+(define (get-value board pos)
+  (define state (remainder (quotient board (expt 4 (+ (car pos)
+                                                      (* 4 (cadr pos))
+                                                      (* 16 (caddr pos)))))
+                           4))
+  (cond ((= state 2) 1)
+        ((= state 3) -1)
+        (else 0)))
   ;; pos - a list of x y z coordinates, in that order
-  (vector-ref (vector-ref (vector-ref board (caddr pos)) (cadr pos)) (car pos)))
+  ;(vector-ref (vector-ref (vector-ref board (caddr pos)) (cadr pos)) (car pos)))
 ;  (list-ref (list-ref (list-ref board (caddr pos)) (cadr pos)) (car pos)))
 
-(define (set!-value pos val)
-  (vector-set! (vector-ref (vector-ref board (caddr pos)) (cadr pos)) (car pos) val))
+(define (display-board board)
+  (display "(")
+  (for ((i 4))
+    (display "(")
+    (for ((j 4))
+      (display "(")
+      (for ((k 4))
+        (display (get-value board (list k j i))))
+      (display ")"))
+    (displayln ")"))
+  (displayln ")"))
+
+;(define (display-board board)
+;  (for ((i 4)) (displayln (vector-ref board i))))
+
+(define (set!-value board pos val)
+  ;(vector-set! (vector-ref (vector-ref board (caddr pos)) (cadr pos)) (car pos) val))
+  (cond ((= 0 (get-value board pos))
+         (define part (expt 4 (+ (car pos)
+                                 (* 4 (cadr pos))
+                                 (* 16 (caddr pos)))))
+         (+ (* (+ (* (quotient board (* 4 part)) 4)
+                        (cond ((= 1 val) 2)
+                              ((= -1 val) 3)
+                              (else "Invalid val: " val))) part)
+                  (remainder board part)))
+        (else (error "Position is already set: " pos))))
+
+(define (board-copy board) board)
+;  (define z-max (vector-length vec))
+;  (define y-max (vector-length (vector-ref vec 0)))
+;  (build-vector z-max
+;                (lambda (z)
+;                  (build-vector y-max
+;                                (lambda (y)
+;                                  (vector-copy
+;                                   (vector-ref (vector-ref vec z) y)))))))
+
+(define (list->board l)
+  (define vec (list->vector l))
+  (define board (make-3d-vector 4 4 4 0))
+  (for/list ((i 64))
+    (define z (quotient i 16))
+    (define y (quotient (remainder i 16) 4))
+    (define x (remainder (remainder i 16) 4))
+    (set!-value board (list x y z) (vector-ref vec i)))
+  board)
+
+(define (board->list board)
+  (define vec (make-vector 64 0))
+  (for/list ((i 64))
+    (define z (quotient i 16))
+    (define y (quotient (remainder i 16) 4))
+    (define x (remainder (remainder i 16) 4))
+    (vector-set! vec i (get-value board (list x y z))))
+  (vector->list vec))
 
 
-(define (win? player)
+(define (win? board lpp) ; lpp is for last played position
   ; returns #t if a player has won.
 
   (define n 3) ; increase n to increase size of board (board-size - 1)
   
   (define line-found #f)
-  (define lpp last-played-pos) ; abbreviation
+ ; (define lpp last-played-pos) ; abbreviation
+
+  (define (get-value1 pos)
+    (get-value board pos))
+  (define (set!-value1 pos)
+    (set!-value board pos))
   
   (define (get-line init-update)
     (define gl-init (car init-update))
@@ -55,7 +139,7 @@
     ; takes in a list of coordinates and checks if they form a complete line
     ; currently does not check if the position is unset.
     ;(displayln "In in-a-line?")
-    (and (apply = (map get-value l)) (not (= 0 (get-value (car l))))))
+    (and (apply = (map get-value1 l)) (not (= 0 (get-value1 (car l))))))
   
   (define (border-not-reached? pos)
     ; Returns #t if pos is an invalid (in a greater sense) coordinate
@@ -108,7 +192,7 @@
   (define (helper)
     ; the main function of win?
     (define init-update-list (update-methods))
-    (displayln init-update-list)
+    ;(displayln init-update-list)
     (define (check-all-lines l) ; l would be a list of init-updates
       (cond (line-found #t)
             ((null? l) #f)
