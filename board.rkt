@@ -1,16 +1,18 @@
 #lang racket
 
+;; The main function is the mark function. This is called every time
+;; the board (canvas) is clicked. This association with click is made in the
+;; defined-by-us canvas-with-events% class, of which gui-board is the function.
+
+;; At the start of the application, the draw-board procedure is called,
+;; as can be seen at the end of the file.
+
 (require racket/gui)
 
-;(dynamic-require "win.rkt")
-;(provide (all-defined-out))
 (include "win.rkt")
 (include "minimax.rkt")
-;(define pcturn #f)
-; player can be either 0 or 1 - two players
 
-;; doesn't work on difficulty 3
-(define difficulty 4)
+(define difficulty 3)
 
 (define main-window (new frame%
                          [label "Tic Tac Toe 3d"]
@@ -69,6 +71,14 @@
   (for ((z 4))
     (draw-2d-board dc z)))
 
+
+;; The mark function, firstly, determines if the click is at
+;; a valid location (inside a cell); if it is,
+;; then it marks the location if it is unoccupied.
+
+;; Bug: clicking on an occupied cell lets the computer play,
+;; which it should not.
+
 (define (mark x y)
   (define valid-position #t)
   (define z 0)
@@ -119,15 +129,15 @@
                 (send win-notif show #t))
               (void)))
         (void))
-    (display-board board)
+    ;(display-board board)
     (set! myturn (not myturn)))
   
   (if valid-position
       (let ()
         (make-turn)
         
-        (define pc-pos (play-n-turns-3 difficulty))
-        (display "PC Pos:") (displayln pc-pos)
+        (define pc-pos (play-n-turns difficulty))
+        ;(display "PC Pos:") (displayln pc-pos)
         (set! x (+ (* (car pc-pos) 50) 10))
         (set! z (caddr pc-pos))
         (set! adjusted-y (+ (* (cadr pc-pos) 30) 10 (* 120 z)))
