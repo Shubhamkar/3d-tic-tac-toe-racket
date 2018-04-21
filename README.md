@@ -5,3 +5,5 @@ Team: Amish Jain (170050062), Kalpit Veerwal (170050058), Shubhamkar B. Ayare (1
 
 ## 3D Tic Tac Toe in DrRacket
 
+Run the board.rkt file.
+
