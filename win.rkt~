@@ -7,61 +7,37 @@
 ;;; the last played position, we take this position, and check from the
 ;;; corresponding beginning of every such line.
 
-; board is an integer; 2 bits each represent the state of each cell
+(define board 0) ; board is an integer; 2 bits each represent the state of each cell
 ; unset state is 0; other states are -1 and 1.
 
 (define last-played-pos '(0 0 0))
 (define pcturn #t)
 
+;; pos - a list of x y z coordinates, in that order
+(define (get-value board pos)
+  (define state (remainder (quotient board (expt 4 (+ (car pos)
+                                                      (* 4 (cadr pos))
+                                                      (* 16 (caddr pos)))))
+                           4))
+  (cond ((= state 2) 1)
+        ((= state 3) -1)
+        (else 0)))
+
 ;; Bug: This does not actually modify the board, but returns the copy of the board
+(define (set!-value board pos val)
+  (cond ((= 0 (get-value board pos))
+         (define part (expt 4 (+ (car pos)
+                                 (* 4 (cadr pos))
+                                 (* 16 (caddr pos)))))
+         (+ (* (+ (* (quotient board (* 4 part)) 4)
+                        (cond ((= 1 val) 2)
+                              ((= -1 val) 3)
+                              (else "Invalid val: " val))) part)
+                  (remainder board part)))
+        (else (error "Position is already set: " pos))))
 
 (define (board-copy board) board)
 
-(define board%
-  (class object%
-    (super-new)
-    (init-field (board-state 0))
-
-    (define/public (copy-board)
-      (new board% (board-state board-state)))
-    
-    (define/public (display-board)
-      (display "(")
-      (for ((i 4))
-        (display "(")
-        (for ((j 4))
-          (display "(")
-          (for ((k 4))
-            (display (get-value (list k j i))))
-          (display ")"))
-        (displayln ")"))
-      (displayln ")"))
-    
-    ;; pos - a list of x y z coordinates, in that order
-    (define/public (get-value pos)
-      (define state (remainder (quotient board-state (expt 4 (+ (car pos)
-                                                          (* 4 (cadr pos))
-                                                          (* 16 (caddr pos)))))
-                               4))
-      (cond ((= state 2) 1)
-            ((= state 3) -1)
-            (else 0)))
-    
-    (define/public (set!-value pos val)
-      (cond ((= 0 (get-value pos))
-             (define part (expt 4 (+ (car pos)
-                                     (* 4 (cadr pos))
-                                     (* 16 (caddr pos)))))
-             (set! board-state
-                   (+ (* (+ (* (quotient board-state (* 4 part)) 4)
-                            (cond ((= 1 val) 2)
-                                  ((= -1 val) 3)
-                                  (else "Invalid val: " val))) part)
-                      (remainder board-state part)))
-             this)
-            (else (error "Position is already set: " pos))))))
-
-(define board (new board%))
 
 ;; Inside this, the main function is helper
 (define (win? board lpp) ; lpp is for last played position
@@ -72,9 +48,9 @@
   (define line-found #f)
 
   (define (get-value1 pos)
-    (send board get-value pos))
+    (get-value board pos))
   (define (set!-value1 pos)
-    (send board set!-value pos))
+    (set!-value board pos))
   
   (define (get-line init-update)
     (define gl-init (car init-update))

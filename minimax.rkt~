@@ -22,32 +22,29 @@
     ((gnode val subtrees) val)))
 
 (define myturn #f)
-;; While dubugging this file myturn should be true.
-;; While using this file, from board.rkt, it should be false.
-
 (define (sign)
   (if myturn 1 -1))
 
-
-;(send board set!-value '(2 0 0) 1)
-;(send board set!-value '(2 1 0) 1)
-;;(send board set!-value '(2 2 0) 1)
-;(send board set!-value '(1 2 0) 1)
-;(send board set!-value '(0 2 0) 1)
+;(set! last-played-pos '(2 2 0))
+;
+;(set! board (set!-value board '(2 0 0) -1))
+;(set! board (set!-value board '(2 1 0) -1))
+;;(set! board (set!-value board '(2 2 0) -1))
+;;(set! board (set!-value board '(2 3 0) 1))
+;(set! board (set!-value board '(0 2 0) -1))
+;(set! board (set!-value board '(1 2 0) -1))
 
 (define (all-plays b-lpp)
   ;; denoting all possible moves
   ;; lpp is for last-played position, used in win? function.
-  
   (define (ap-h i)
     (cond ((= i 64) '())
           (else
            (define z (quotient i 16))
            (define y (quotient (remainder i 16) 4))
            (define x (remainder (remainder i 16) 4))
-           (define new-board (send (car b-lpp) copy-board))
-           (if (= 0 (send (car b-lpp) get-value (list x y z)))
-               (cons (cons (send new-board set!-value (list x y z) (sign)) i)
+           (if (= 0 (get-value (car b-lpp) (list x y z)))
+               (cons (cons (set!-value (car b-lpp) (list x y z) (sign)) i)
                      (ap-h (+ i 1)))
                (ap-h (+ i 1))))))
   (ap-h 0))

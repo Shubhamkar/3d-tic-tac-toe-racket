@@ -113,15 +113,15 @@
     (displayln last-played-pos)
     
 
-    (if (= 0 (send board get-value last-played-pos))
+    (if (= 0 (get-value board last-played-pos))
         (begin
           (set! corner-x (+ 10 (* cell-x 50)))
           (set! corner-y (+ 10 (* cell-y 30)  (* cell-z 160)))
           (send dc set-pen black-pen)
           (cond (myturn
                  (circle)
-                 (send board set!-value last-played-pos 1))
-                (else (cross) (set! board (send board set!-value last-played-pos -1))))
+                 (set! board (set!-value board last-played-pos 1)))
+                (else (cross) (set! board (set!-value board last-played-pos -1))))
           (if (win? board last-played-pos)
               (begin
                 (send win-msg set-label (string-append "Player " (number->string (if myturn 2 1)) " has won!"))
