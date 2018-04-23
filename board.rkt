@@ -9,15 +9,20 @@
 
 (require racket/gui)
 
+(define difficulty 3)
+;; some issue with n=5
+(define n 3)
+
 (include "win.rkt")
 (include "minimax.rkt")
 
-(define difficulty 3)
+;(set-minimax-n 3)
+;(set-win-n 3)
 
 (define main-window (new frame%
                          [label "Tic Tac Toe 3d"]
                          [min-width 700]
-                         [min-height 650] ; non-fullHD monitors likely have a height of 720-768px
+                         [min-height 800] ; non-fullHD monitors likely have a height of 720-768px
                          [stretchable-width #f]
                          [stretchable-height #f]))
 ;; Scaling and all will be needed to allow the window to be resizable
@@ -46,29 +51,32 @@
 (define blue-pen (make-object pen% "BLUE" 2 'solid))
 (define green-pen (make-object pen% "GREEN" 2 'solid))
 (define black-pen (make-object pen% "BLACK" 2 'solid))
+(define pink-pen (make-object pen% "PINK" 2 'solid))
 
 (define z->pen
-  (let* ((z-pen (make-vector 4 #f)))
+  (let* ((z-pen (make-vector 5 #f)))
     (vector-set! z-pen 0 red-pen)
     (vector-set! z-pen 1 yellow-pen)
     (vector-set! z-pen 2 blue-pen)
     (vector-set! z-pen 3 green-pen)
+    (vector-set! z-pen 4 pink-pen)
     (lambda (z) (vector-ref z-pen z))))
 
 ; Get the (board's) canvas's drawing context
 (define dc (send gui-board get-dc))
 
+
 (define (draw-2d-board dc z)
   (send dc set-pen (z->pen z))    
-  (for ((y 4))
-    (for ((x 4))
+  (for ((y n))
+    (for ((x n))
       (send dc draw-rectangle
             (+ 10 (* 50 x))
-            (+ 10 (* 160 z) (* 30 y))
+            (+ 10 (* (+ 40 (* 30 n)) z) (* 30 y))
             50 30))))
 
 (define (draw-board dc)
-  (for ((z 4))
+  (for ((z n))
     (draw-2d-board dc z)))
 
 
@@ -82,12 +90,31 @@
 (define (mark x y)
   (define valid-position #t)
   (define z 0)
+;  (define adjusted-y
+;    (cond ((and (<= 10 y) (> 130 y)) y)
+;          ((and (<= 170 y) (> 290 y)) (set! z 1) (- y 40))
+;          ((and (<= 330 y) (> 450 y)) (set! z 2) (- y 80))
+;          ((and (<= 490 y) (>= 610 y)) (set! z 3) (- y 120))
+;          (else (set! valid-position #f))))
   (define adjusted-y
-    (cond ((and (<= 10 y) (> 130 y)) y)
-          ((and (<= 170 y) (> 290 y)) (set! z 1) (- y 40))
-          ((and (<= 330 y) (> 450 y)) (set! z 2) (- y 80))
-          ((and (<= 490 y) (>= 610 y)) (set! z 3) (- y 120))
-          (else (set! valid-position #f))))
+    (let ()
+      (define (ay-h y)
+        (display "z: ") (displayln z)
+        (cond ((>= z n) (set! valid-position #f))
+              ((and (<= (+ (* (+ 40 (* 30 n)) z)) y)
+                    (< y (+ (* (+ 40 (* 30 n)) z) (* 30 n))))
+               ;(set! z (+ z 1))
+               (- y (* z 40)))
+              (else
+               (set! z (+ z 1))
+               (ay-h y))))
+      (ay-h y)))
+;      (set! z (quotient (- y 10) (* n 30)))
+;      (if (>= z n) (set! valid-position #f)
+;          (if (and (<= (+ 10 (* 30 n z) (* 40 z)) y)
+;                   (< y (+ 10 (* 30 n z) (* 40 z) (* n 30))))
+;              (- y (* z 40))
+;              (set! valid-position #f)))))
   ;(displayln corner-x)
   ;(displayln corner-y)
   (define corner-x 0)
@@ -100,13 +127,13 @@
   (define (circle)
     (send dc draw-ellipse (+ 20 corner-x) (+ 10 corner-y) 10 10))
   
-  (if (>= x 210) (set! valid-position #f) (void))
+  (if (>= x (+ 10 (* 50 n))) (set! valid-position #f) (void))
   
   (define (make-turn)
     ;(displayln (list x adjusted-y))
     
     (define cell-x (floor (/ (- x 10) 50)))
-    (define cell-y (floor (/ (- adjusted-y 10 (* z 120)) 30)))
+    (define cell-y (floor (/ (- adjusted-y 10 (* z (* n 30))) 30)))
     (define cell-z z)
     
     (set! last-played-pos (list cell-x cell-y cell-z))  
@@ -116,7 +143,7 @@
     (if (= 0 (send board get-value last-played-pos))
         (begin
           (set! corner-x (+ 10 (* cell-x 50)))
-          (set! corner-y (+ 10 (* cell-y 30)  (* cell-z 160)))
+          (set! corner-y (+ 10 (* cell-y 30)  (* cell-z (+ (* 30 n) 40))))
           (send dc set-pen black-pen)
           (cond (myturn
                  (circle)
@@ -137,10 +164,10 @@
         (make-turn)
         
         (define pc-pos (play-n-turns difficulty))
-        ;(display "PC Pos:") (displayln pc-pos)
+        (display "PC Pos:") (displayln pc-pos)
         (set! x (+ (* (car pc-pos) 50) 10))
         (set! z (caddr pc-pos))
-        (set! adjusted-y (+ (* (cadr pc-pos) 30) 10 (* 120 z)))
+        (set! adjusted-y (+ (* (cadr pc-pos) 30) 10 (* 30 n z)))
               ;(floor (/ (- adjusted-y 10 (* z 120)) 30))))
         (make-turn))
       (void)))
@@ -179,7 +206,7 @@
        ; Callback procedure for a button click:
        [callback (lambda (button event)
                    (draw-board dc)
-                   (set! board 0)
+                   (set! board (new board%))
                    (send msg-area set-label "The game has been restarted.")
                    (send restart-confirm-window show #f))]))
 ;(send restart-confirm-window show #t))]))

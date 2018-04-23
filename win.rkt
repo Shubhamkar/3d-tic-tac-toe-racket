@@ -10,8 +10,10 @@
 ; board is an integer; 2 bits each represent the state of each cell
 ; unset state is 0; other states are -1 and 1.
 
+;(define n 5)
+;(define (set-win-n new-n) (set! n new-n))
+
 (define last-played-pos '(0 0 0))
-(define pcturn #t)
 
 ;; Bug: This does not actually modify the board, but returns the copy of the board
 
@@ -27,11 +29,11 @@
     
     (define/public (display-board)
       (display "(")
-      (for ((i 4))
+      (for ((i n))
         (display "(")
-        (for ((j 4))
+        (for ((j n))
           (display "(")
-          (for ((k 4))
+          (for ((k n))
             (display (get-value (list k j i))))
           (display ")"))
         (displayln ")"))
@@ -39,9 +41,10 @@
     
     ;; pos - a list of x y z coordinates, in that order
     (define/public (get-value pos)
+      ;(displayln pos)
       (define state (remainder (quotient board-state (expt 4 (+ (car pos)
-                                                          (* 4 (cadr pos))
-                                                          (* 16 (caddr pos)))))
+                                                                (* n (cadr pos))
+                                                                (* (* n n) (caddr pos)))))
                                4))
       (cond ((= state 2) 1)
             ((= state 3) -1)
@@ -50,8 +53,8 @@
     (define/public (set!-value pos val)
       (cond ((= 0 (get-value pos))
              (define part (expt 4 (+ (car pos)
-                                     (* 4 (cadr pos))
-                                     (* 16 (caddr pos)))))
+                                     (* n (cadr pos))
+                                     (* (* n n) (caddr pos)))))
              (set! board-state
                    (+ (* (+ (* (quotient board-state (* 4 part)) 4)
                             (cond ((= 1 val) 2)
@@ -67,14 +70,14 @@
 (define (win? board lpp) ; lpp is for last played position
   ; returns #t if a player has won.
 
-  (define n 3) ; increase n to increase size of board (board-size - 1)
+  (define n1 (- n 1)) ; increase n to increase size of board (board-size - 1)
   
   (define line-found #f)
 
   (define (get-value1 pos)
     (send board get-value pos))
-  (define (set!-value1 pos)
-    (send board set!-value pos))
+  ;(define (set!-value1 pos)
+   ; (send board set!-value pos))
   
   (define (get-line init-update)
     (define gl-init (car init-update))
@@ -87,12 +90,14 @@
     ; takes in a list of coordinates and checks if they form a complete line
     ; currently does not check if the position is unset.
     ;(displayln "In in-a-line?")
-    (and (apply = (map get-value1 l)) (not (= 0 (get-value1 (car l))))))
+    (and (if (null? (map get-value1 l)) #f
+             (apply = (map get-value1 l)))
+         (not (= 0 (get-value1 (car l))))))
   
   (define (border-not-reached? pos)
     ; Returns #t if pos is an invalid (in a greater sense) coordinate
     ;(display "In border-not-reached: ") (displayln pos)
-    (and (>= n (car pos)) (>= n (cadr pos)) (>= n (caddr pos))))
+    (and (>= n1 (car pos)) (>= n1 (cadr pos)) (>= n1 (caddr pos))))
 
   ;;; CAN BE A BOTTLENECK WITHOUT VECTORS
   (define (update x y z)
@@ -121,18 +126,18 @@
       (append* (if (= x y) (list (list (list 0 0 z) (update 1 1 0))) '())
                (if (= z y) (list (list (list x 0 0) (update 0 1 1))) '())
                (if (= x z) (list (list (list 0 y 0) (update 1 0 1))) '())
-               (if (= n (+ x y)) (list (list (list 0 n z) (update 1 -1 0))) '())
-               (if (= n (+ z y)) (list (list (list x 0 n) (update 0 1 -1))) '())
-               (if (= n (+ x z)) (list (list (list (list n y 0) (update -1 0 1)))) '())))
+               (if (= n1 (+ x y)) (list (list (list 0 n1 z) (update 1 -1 0))) '())
+               (if (= n1 (+ z y)) (list (list (list x 0 n1) (update 0 1 -1))) '())
+               (if (= n1 (+ x z)) (list (list (list (list n1 y 0) (update -1 0 1)))) '())))
     
     (define (gen-body-diag)
       (append* (if (= x y z) (list (list (list 0 0 0) (update 1 1 1))) '())
-               (if (and (= x y) (= n (+ x z)))
-                   (list (list (list 0 0 3) (update 1 1 -1))) '())
-               (if (and (= x z) (= n (+ x y)))
-                   (list (list (list 0 3 0) (update 1 -1 1))) '())
-               (if (and (= z y) (= n (+ x z)))
-                   (list (list (list (list 3 0 0) (update -1 1 1)))) '())))
+               (if (and (= x y) (= n1 (+ x z)))
+                   (list (list (list 0 0 n1) (update 1 1 -1))) '())
+               (if (and (= x z) (= n1 (+ x y)))
+                   (list (list (list 0 n1 0) (update 1 -1 1))) '())
+               (if (and (= z y) (= n1 (+ x z)))
+                   (list (list (list (list n1 0 0) (update -1 1 1)))) '())))
     
     (append (gen-axes) (gen-plane-diag) (gen-body-diag)))
 
