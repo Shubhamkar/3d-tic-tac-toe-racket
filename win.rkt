@@ -23,10 +23,10 @@
   (class object%
     (super-new)
     (init-field (board-state 0))
-
+    ;(init-field)
     (define/public (copy-board)
       (new board% (board-state board-state)))
-    
+   
     (define/public (display-board)
       (display "(")
       (for ((i n))

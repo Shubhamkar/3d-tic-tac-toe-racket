@@ -16,8 +16,6 @@
 ;(define n 3)
 ;(define (set-minimax-n new-n) (set! n new-n))
 
-(define n-cube (* n n n))
-
 (struct gnode (val subtrees)); #:transparent)
 (struct leaf (val)); #:transparent)
 (define (get-val node)
@@ -42,7 +40,7 @@
 (define (all-plays b-lpp)
   ;; denoting all possible moves
   ;; lpp is for last-played position, used in win? function.
-  
+  (define n-cube (* n n n))
   (define (ap-h i)
     (cond ((= i n-cube) '())
           (else

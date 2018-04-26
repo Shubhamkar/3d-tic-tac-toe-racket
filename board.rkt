@@ -98,9 +98,10 @@
     (let ()
       (define (ay-h y)
         ;(display "z: ") (displayln z)
+        (displayln n)
         (cond ((>= z n) (set! valid-position #f))
-              ((and (<= (+ (* (+ 40 (* 30 n)) z)) y)
-                    (< y (+ (* (+ 40 (* 30 n)) z) (* 30 n))))
+              ((and (<= (+ (* (+ 40 (* 30 n)) z) 10) y)
+                    (< y (+ (* (+ 40 (* 30 n)) z) (* 30 n) 10)))
                ;(set! z (+ z 1))
                (- y (* z 40)))
               (else
@@ -117,7 +118,7 @@
   (define (circle)
     (send dc draw-ellipse (+ 20 corner-x) (+ 10 corner-y) 10 10))
   
-  (if (>= x (+ 10 (* 50 n))) (set! valid-position #f) (void))
+  (if (or (>= x (+ 10 (* 50 n))) (< x 10)) (set! valid-position #f) (void))
   
   (define (make-turn)
     ;(displayln (list x adjusted-y))
