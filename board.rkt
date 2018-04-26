@@ -9,9 +9,11 @@
 
 (require racket/gui)
 
-(define difficulty 4)
+(define difficulty 3)
 ;; some issue with n=5
 (define n 3)
+(define 1-player #t)
+(define game-over #f)
 
 (include "win.rkt")
 (include "minimax.rkt")
@@ -132,7 +134,7 @@
     ;(displayln last-played-pos)
     
 
-    (if (= 0 (send board get-value last-played-pos))
+    (if (and (= 0 (send board get-value last-played-pos)) (not game-over))
         (begin
           (set! corner-x (+ 10 (* cell-x 50)))
           (set! corner-y (+ 10 (* cell-y 30)  (* cell-z (+ (* 30 n) 40))))
@@ -143,6 +145,7 @@
                 (else (cross) (set! board (send board set!-value last-played-pos -1))))
           (if (win? board last-played-pos)
               (begin
+                (set! game-over #t)
                 (send win-msg set-label (string-append "Player " (number->string (if myturn 2 1)) " has won!"))
                 ;(sleep/yield 0.05)
                 (send win-notif show #t))
@@ -154,14 +157,16 @@
   (if valid-position
       (let ()
         (make-turn)
-        
-        (define pc-pos (play-n-turns difficulty))
-        ;(display "PC Pos:") (displayln pc-pos)
-        (set! x (+ (* (car pc-pos) 50) 10))
-        (set! z (caddr pc-pos))
-        (set! adjusted-y (+ (* (cadr pc-pos) 30) 10 (* 30 n z)))
+        (if 1-player
+            (let ()
+              (define pc-pos (play-n-turns difficulty))
+              ;(display "PC Pos:") (displayln pc-pos)
+              (set! x (+ (* (car pc-pos) 50) 10))
+              (set! z (caddr pc-pos))
+              (set! adjusted-y (+ (* (cadr pc-pos) 30) 10 (* 30 n z)))
               ;(floor (/ (- adjusted-y 10 (* z 120)) 30))))
-        (make-turn))
+              (make-turn))
+            (void)))
       (void)))
 
 
@@ -191,15 +196,30 @@
   (new message% (parent restart-confirm-window)
        (label "Are you sure you want to restart?")))
 
-(define restart-yes
+(define restart-yes-1
   (new button%
        [parent restart-confirm-window]
-       [label "Yes"]
+       [label "Yes, 1 player (Player vs PC)"]
        ; Callback procedure for a button click:
        [callback (lambda (button event)
                    (draw-board dc)
                    (send board reset)
-                   (send msg-area set-label "The game has been restarted.")
+                   (set! game-over #f)
+                   (set! 1-player #t)
+                   (send msg-area set-label "The game has been restarted. (Player vs PC)")
+                   (send restart-confirm-window show #f))]))
+
+(define restart-yes-2
+  (new button%
+       [parent restart-confirm-window]
+       [label "Yes, 2 players (Player vs Player)"]
+       ; Callback procedure for a button click:
+       [callback (lambda (button event)
+                   (draw-board dc)
+                   (send board reset)
+                   (set! game-over #f)
+                   (set! 1-player #f)
+                   (send msg-area set-label "The game has been restarted. (Player vs Player)")
                    (send restart-confirm-window show #f))]))
 ;(send restart-confirm-window show #t))]))
 
