@@ -11,7 +11,7 @@
 
 (define difficulty 3)
 ;; some issue with n=5
-(define n 3)
+(define n 4)
 (define 1-player #t)
 (define game-over #f)
 
@@ -23,7 +23,7 @@
 
 (define main-window (new frame%
                          [label "Tic Tac Toe 3d"]
-                         [min-width 700]
+                         [min-width 750]
                          [min-height 800] ; non-fullHD monitors likely have a height of 720-768px
                          [stretchable-width #f]
                          [stretchable-height #f]))
@@ -41,7 +41,9 @@
 
 ; Make the drawing area
 (define gui-board (new canvas-with-events%
-                       [parent h-panel]))
+                       [parent h-panel]
+                       [min-width 300]
+                       [stretchable-width #f]))
 
 ; Make some pens and brushes
 (define no-pen (make-object pen% "BLACK" 1 'transparent))
@@ -92,12 +94,6 @@
 (define (mark x y)
   (define valid-position #t)
   (define z 0)
-;  (define adjusted-y
-;    (cond ((and (<= 10 y) (> 130 y)) y)
-;          ((and (<= 170 y) (> 290 y)) (set! z 1) (- y 40))
-;          ((and (<= 330 y) (> 450 y)) (set! z 2) (- y 80))
-;          ((and (<= 490 y) (>= 610 y)) (set! z 3) (- y 120))
-;          (else (set! valid-position #f))))
   (define adjusted-y
     (let ()
       (define (ay-h y)
@@ -141,11 +137,18 @@
           (send dc set-pen black-pen)
           (cond (myturn
                  (circle)
-                 (send board set!-value last-played-pos 1))
-                (else (cross) (set! board (send board set!-value last-played-pos -1))))
+                 (send board set!-value last-played-pos 1)
+                 (send process-msg-area set-label "First player's turn: X"))
+                (else
+                 (cross)
+                 (set! board (send board set!-value last-played-pos -1))
+                 (if 1-player
+                     (send process-msg-area set-label "Second player's turn: O
+          Thinking...")
+                     (send process-msg-area set-label "Second player's turn: O"))))
           (if (win? board last-played-pos)
               (begin
-                (set! game-over #t)
+                (game-over-processes)
                 (send win-msg set-label (string-append "Player " (number->string (if myturn 2 1)) " has won!"))
                 ;(sleep/yield 0.05)
                 (send win-notif show #t))
@@ -169,6 +172,25 @@
             (void)))
       (void)))
 
+(define (game-over-processes)
+  (set! myturn #f)
+  (set! game-over #t)
+  (send process-msg-area set-label "")
+  (send msg-area set-label "Game Over. Restart to play again."))
+
+(define (restart-processes)
+  (send dc erase)
+  (draw-board dc)
+  (send board reset)
+  (set! game-over #f)
+  (if 1-player
+      (send msg-area set-label
+        "The game has been restarted.
+              (Player vs PC)")
+      (send msg-area set-label
+            "The game has been restarted.
+           (Player vs Player)"))
+  (send process-msg-area set-label "You play first."))
 
 ;----------------------------------- End of GUI Board ------------------------------------
 
@@ -177,15 +199,26 @@
 
 (define msg-area (new message%
                       [parent v-panel]
-                      [label "Welcome!"]))
+                      [vert-margin 50]
+                      [label "                Welcome!\n
+Use the restart button to choose
+between 1 player and 2 player."]
+                      [min-width 250]
+                      [font (make-object font% 13.5 'system)]
+                      [auto-resize #t]))
 
 (define restart-btn
   (new button% [parent v-panel]
-             [label "Restart"]
-             ; Callback procedure for a button click:
-             [callback (lambda (button event)
-                         ;(send msg-area set-label "The game has been restarted."))]))
-                         (send restart-confirm-window show #t))]))
+       
+       [label "RESTART"]
+       [font (make-object font% 15 'system)]
+       [min-width 150]
+       [min-height 50]
+       
+       ; Callback procedure for a button click:
+       [callback (lambda (button event)
+                   ;(send msg-area set-label "The game has been restarted."))]))
+                   (send restart-confirm-window show #t))]))
 
 ;;------------------ Restart Confirmation Dialog Box --------------
 
@@ -206,8 +239,11 @@
                    (send board reset)
                    (set! game-over #f)
                    (set! 1-player #t)
-                   (send msg-area set-label "The game has been restarted. (Player vs PC)")
-                   (send restart-confirm-window show #f))]))
+                   (send msg-area set-label
+                         "The game has been restarted.
+              (Player vs PC)")
+                   (send restart-confirm-window show #f)
+                   (send process-msg-area set-label "You play first."))]))
 
 (define restart-yes-2
   (new button%
@@ -219,8 +255,11 @@
                    (send board reset)
                    (set! game-over #f)
                    (set! 1-player #f)
-                   (send msg-area set-label "The game has been restarted. (Player vs Player)")
-                   (send restart-confirm-window show #f))]))
+                   (send msg-area set-label
+                         "The game has been restarted.
+           (Player vs Player)")
+                   (send restart-confirm-window show #f)
+                   (send process-msg-area set-label "You play first."))]))
 ;(send restart-confirm-window show #t))]))
 
 (define restart-no
@@ -236,7 +275,122 @@
                        (width 400)
                        (height 50)))
 (define win-msg (new message% (parent win-notif)
-                     (label "")))
+                     (label "")
+                     (horiz-margin 50)
+                     (auto-resize #t)
+                     [font (make-object font% 15 'system)]))
+
+;;---------------- Below the restart button -------------------------------
+
+(define process-msg-area
+  (new message%
+       [parent v-panel]
+       [vert-margin 50]
+       [label "You play first."]
+       [min-width 250]
+       [font (make-object font% 13.5 'system)]
+       [auto-resize #t]))
+
+;;----------------------------- Board Size --------------------------------------
+
+(define set-board-size
+  (new button% [parent v-panel]
+       
+       [label "Set size"]
+       [font (make-object font% 12 'system)]
+       [min-width 150]
+       [min-height 50]
+       [vert-margin 20]
+       ; Callback procedure for a button click:
+       [callback (lambda (button event)
+                   ;(send msg-area set-label "The game has been restarted."))]))
+                   (send resize-board-confirm show #t))]))
+
+(define resize-board-confirm
+  (new dialog%
+       (label "Set Size")))
+
+(define resize-confirm-msg
+  (new message% (parent resize-board-confirm)
+       (vert-margin 10)
+       (horiz-margin 20)
+       (min-width 250)
+       (label "WARNING: CLICKING ON ANY OF THE BUTTONS
+BELOW WILL RESTART THE GAME.
+
+To avoid restarting, close using the X button
+of this dialog box.
+
+Note: 5x5x5 board may not be displayed on screen.")))
+
+(define size-choice-box
+  (new radio-box%
+       (label "Board Size")
+       (parent resize-board-confirm)
+       (choices (list "3x3x3" "4x4x4" "5x5x5"))
+       (selection 1)
+       (callback (lambda (button event)
+                   (define diff (send size-choice-box get-selection))
+                   (match diff
+                     (0 (set! n 3))
+                     (1 (set! n 4))
+                     (2 (set! n 5)))
+                   (restart-processes)
+                   (send resize-board-confirm show #f)))))
+
+;;----------------------------- Difficulty --------------------------------------
+
+(define set-board-difficulty
+  (new button% [parent v-panel]
+       
+       [label "Change difficulty"]
+       [font (make-object font% 12 'system)]
+       [min-width 150]
+       [min-height 50]
+       [vert-margin 20]
+       
+       ; Callback procedure for a button click:
+       [callback (lambda (button event)
+                   ;(send msg-area set-label "The game has been restarted."))]))
+                   (send difficulty-board-confirm show #t))]))
+
+(define difficulty-board-confirm
+  (new dialog%
+       (label "Set Difficulty")))
+
+(define difficulty-confirm-msg
+  (new message% (parent difficulty-board-confirm)
+       (vert-margin 10)
+       (horiz-margin 20)
+       (min-width 250)
+       (label "WARNING: CLICKING ON ANY OF THE BUTTONS
+BELOW WILL RESTART THE GAME.
+
+To avoid restarting, use the X button of this
+dialog box.
+
+4x4x4 or 5x5x5 board will be very slow on
+Hard difficulty.")))
+
+(define difficulty-choice-box
+  (new radio-box%
+       (label "Difficulty")
+       (parent difficulty-board-confirm)
+       (choices (list "Easy" "Medium" "Hard"))
+       (selection 1)
+       (callback (lambda (button event)
+                   (define diff (send difficulty-choice-box get-selection))
+                   (match diff
+                     (0 (set! difficulty 2))
+                     (1 (set! difficulty 3))
+                     (2 (set! difficulty 4)))
+                   (restart-processes)
+                   (send difficulty-board-confirm show #f)))))
+
+
+
+
+
 
 
 ;;================================ Do this after every thing has loaded ===========================
