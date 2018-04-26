@@ -98,7 +98,7 @@
     (let ()
       (define (ay-h y)
         ;(display "z: ") (displayln z)
-        (displayln n)
+        ;(displayln n)
         (cond ((>= z n) (set! valid-position #f))
               ((and (<= (+ (* (+ 40 (* 30 n)) z) 10) y)
                     (< y (+ (* (+ 40 (* 30 n)) z) (* 30 n) 10)))
