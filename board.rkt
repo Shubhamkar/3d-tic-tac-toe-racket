@@ -9,7 +9,7 @@
 
 (require racket/gui)
 
-(define difficulty 3)
+(define difficulty 4)
 ;; some issue with n=5
 (define n 3)
 
@@ -99,7 +99,7 @@
   (define adjusted-y
     (let ()
       (define (ay-h y)
-        (display "z: ") (displayln z)
+        ;(display "z: ") (displayln z)
         (cond ((>= z n) (set! valid-position #f))
               ((and (<= (+ (* (+ 40 (* 30 n)) z)) y)
                     (< y (+ (* (+ 40 (* 30 n)) z) (* 30 n))))
@@ -109,14 +109,6 @@
                (set! z (+ z 1))
                (ay-h y))))
       (ay-h y)))
-;      (set! z (quotient (- y 10) (* n 30)))
-;      (if (>= z n) (set! valid-position #f)
-;          (if (and (<= (+ 10 (* 30 n z) (* 40 z)) y)
-;                   (< y (+ 10 (* 30 n z) (* 40 z) (* n 30))))
-;              (- y (* z 40))
-;              (set! valid-position #f)))))
-  ;(displayln corner-x)
-  ;(displayln corner-y)
   (define corner-x 0)
   (define corner-y 0)
   
@@ -137,7 +129,7 @@
     (define cell-z z)
     
     (set! last-played-pos (list cell-x cell-y cell-z))  
-    (displayln last-played-pos)
+    ;(displayln last-played-pos)
     
 
     (if (= 0 (send board get-value last-played-pos))
@@ -164,7 +156,7 @@
         (make-turn)
         
         (define pc-pos (play-n-turns difficulty))
-        (display "PC Pos:") (displayln pc-pos)
+        ;(display "PC Pos:") (displayln pc-pos)
         (set! x (+ (* (car pc-pos) 50) 10))
         (set! z (caddr pc-pos))
         (set! adjusted-y (+ (* (cadr pc-pos) 30) 10 (* 30 n z)))
@@ -206,7 +198,7 @@
        ; Callback procedure for a button click:
        [callback (lambda (button event)
                    (draw-board dc)
-                   (set! board (new board%))
+                   (send board reset)
                    (send msg-area set-label "The game has been restarted.")
                    (send restart-confirm-window show #f))]))
 ;(send restart-confirm-window show #t))]))

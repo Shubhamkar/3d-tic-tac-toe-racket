@@ -13,7 +13,7 @@
 ;; coupled with the score function to evaluate partial success
 
 
-;(define n 5)
+;(define n 3)
 ;(define (set-minimax-n new-n) (set! n new-n))
 
 (define n-cube (* n n n))
@@ -33,9 +33,9 @@
   (if myturn 1 -1))
 
 
-;(send board set!-value '(2 0 0) 1)
-;(send board set!-value '(2 1 0) 1)
-;;(send board set!-value '(2 2 0) 1)
+;(send board set!-value '(2 0 0) -1)
+;(send board set!-value '(2 1 0) -1)
+;(send board set!-value '(2 2 0) 1)
 ;(send board set!-value '(1 2 0) 1)
 ;(send board set!-value '(0 2 0) 1)
 

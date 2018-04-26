@@ -10,7 +10,7 @@
 ; board is an integer; 2 bits each represent the state of each cell
 ; unset state is 0; other states are -1 and 1.
 
-;(define n 5)
+;(define n 3)
 ;(define (set-win-n new-n) (set! n new-n))
 
 (define last-played-pos '(0 0 0))
@@ -62,7 +62,10 @@
                                   (else "Invalid val: " val))) part)
                       (remainder board-state part)))
              this)
-            (else (error "Position is already set: " pos))))))
+            (else (error "Position is already set: " pos))))
+
+    (define/public (reset)
+      (set! board-state 0))))
 
 (define board (new board%))
 
