@@ -16,13 +16,6 @@
 ;(define n 3)
 ;(define (set-minimax-n new-n) (set! n new-n))
 
-(struct gnode (val subtrees)); #:transparent)
-(struct leaf (val)); #:transparent)
-(define (get-val node)
-  (match node
-    ((leaf val) val)
-    ((gnode val subtrees) val)))
-
 (define myturn #f)
 ;; While dubugging this file myturn should be true.
 ;; While using this file, from board.rkt, it should be false.
@@ -64,12 +57,6 @@
                           (list x y z))))
       (if myturn 10 -10)
       0))
-
-(define (remove-all ele l)
-  (cond ((null? l) '())
-        ((equal? ele (car l)) (remove-all ele (cdr l)))
-        (else (cons (car l) (remove-all ele (cdr l))))))
-
 (define (minimax n1 b-lpp) ; b-lpp is a pair of board and lpp
   (define orig-turn myturn)
   (define res

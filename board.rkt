@@ -389,11 +389,6 @@ Hard difficulty.")))
                    (send difficulty-board-confirm show #f)))))
 
 
-
-
-
-
-
 ;;================================ Do this after every thing has loaded ===========================
 
 (send main-window show #t)
